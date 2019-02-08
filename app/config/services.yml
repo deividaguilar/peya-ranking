@@ -4,6 +4,9 @@ parameters:
     #parameter_name: value
 
 services:
-    #service_name:
-    #    class: AppBundle\Directory\ClassName
-    #    arguments: ['@another_service_name', 'plain_value', '%parameter_name%']
+    database_service:
+        class:        AppBundle\Service\DatabaseService
+        arguments:    [%database_host%, %database_port%, %database_name%]
+    cache_service:
+        class:        AppBundle\Service\CacheService
+        arguments:    [%cache_host%, %cache_port%, %cache_prefix%, @database_service]      

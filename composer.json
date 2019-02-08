@@ -14,16 +14,16 @@
     },
     "require": {
         "php": ">=5.3.9",
-        "doctrine/doctrine-bundle": "~1.4",
-        "doctrine/orm": "^2.4.8",
-        "incenteev/composer-parameter-handler": "~2.0",
+        "symfony/symfony": "2.7.*",
+        "symfony/assetic-bundle": "~2.3",
+        "symfony/monolog-bundle": "~2.4",
         "sensio/distribution-bundle": "~4.0",
         "sensio/framework-extra-bundle": "^3.0.2",
-        "symfony/assetic-bundle": "~2.3",
-        "symfony/monolog-bundle": "^3.0.2",
-        "symfony/swiftmailer-bundle": "~2.3,>=2.3.10",
-        "symfony/symfony": "2.7.*",
-        "twig/twig": "^1.0||^2.0"
+        "incenteev/composer-parameter-handler": "~2.0",
+        "predis/predis": "^1.0",
+        "doctrine/doctrine-bundle": "1.6.13",
+        "doctrine/orm": "v2.5.12",
+        "doctrine/mongodb-odm-bundle": "3.4.4"
     },
     "require-dev": {
         "sensio/generator-bundle": "~2.3",
@@ -36,18 +36,21 @@
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::clearCache",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::installAssets",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::installRequirementsFile",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::removeSymfonyStandardFiles",
             "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::prepareDeploymentTarget"
         ],
-        "post-install-cmd": [
-            "@symfony-scripts"
-        ],
         "post-update-cmd": [
-            "@symfony-scripts"
+            "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::buildBootstrap",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::clearCache",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::installAssets",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::installRequirementsFile",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::removeSymfonyStandardFiles",
+            "Sensio\\Bundle\\DistributionBundle\\Composer\\ScriptHandler::prepareDeploymentTarget"
         ]
     },
     "config": {
-        "bin-dir": "bin",
-        "sort-packages": true
+        "bin-dir": "bin"
     },
     "extra": {
         "symfony-app-dir": "app",
