@@ -10,11 +10,26 @@ use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 
 class ScoresController extends Controller {
 
-    /**
-     * @Route("/score/")
-     * @Method("GET")
-     */
-    public function getAction() {
+    public function getAllScoresAction() {
+        $cacheService = $this->get('cache_service');
+        $key = 'scores';
+        $scores = $cacheService->get($key);
+        $online = $scores->online;
+        if (empty($scores->data)) {
+            $scores = $this->findScoresFromMongodb();
+            if ($online == true) {
+                var_dump($online, "cargo datos en redis");
+                $this->loadDataOnRedis($scores, $cacheService);
+            }
+        } else {
+            var_dump("datso redis");
+            $scores = $scores->data;
+        }
+
+        return new JsonResponse($scores);
+    }
+
+    public function getScoreByUserIdAction() {
         $cacheService = $this->get('cache_service');
         $key = 'scores';
         $scores = $cacheService->get($key);
@@ -31,11 +46,7 @@ class ScoresController extends Controller {
         return new JsonResponse($scores);
     }
 
-    /**
-     * @Route("/score/")
-     * @Method("POST")
-     */
-    public function postAction(Request $request) {
+    public function saveScoreAction(Request $request) {
         $score = json_decode($request->getContent());
         if (empty($score)) {
             return new JsonResponse(['status' => 'there is no score'], 400);
@@ -46,18 +57,18 @@ class ScoresController extends Controller {
         }
 
         $database = $this->get('database_service')->getDatabase();
-
-        $database->scores->insert($score);
+        $score->_id = $score->user_id.$score->store_id.$score->buy_id;
+        try {
+            $database->scores->insert($score);
+        } catch (\Exception $e) {
+            return new JsonResponse(['status' => "Score duplicate"], 400);
+        }
         $cacheService = $this->get('cache_service');
         $this->loadDataOnRedis($this->findScoresFromMongodb(), $cacheService);
         return new JsonResponse(['status' => 'Score successfully created']);
     }
 
-    /**
-     * @Route("/score/")
-     * @Method("DELETE")
-     */
-    public function deleteAction() 
+    public function deleteAllAction() 
     {
         $database = $this->get('database_service')->getDatabase();
         $database->scores->drop();
@@ -75,7 +86,9 @@ class ScoresController extends Controller {
     {
         if ($cacheService->validateRedisConnection()) {
             foreach ($scores as $score) {
-                $cacheService->set("scores", json_encode($score));
+                foreach($score as $key => $value) {
+                    $cacheService->set($score['user_id'], $key, $value);
+                }
             }
         }
     }

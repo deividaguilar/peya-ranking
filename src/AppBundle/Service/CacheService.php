@@ -9,7 +9,7 @@ use Predis;
 /**
  * this class implements a CacheService.
  * It contain a failover, which means that if you cannot retrieve
- * data you have to hit the Database.
+ * data, it has to hit the Database.
  * */
 class CacheService {
 
@@ -49,6 +49,8 @@ class CacheService {
             $this->validateLogCacheOffLine($key);
             $redis = $this->getCache();
             $dataJson = $redis->lrange($key, 0, $redis->llen($key));
+            //$dataJson = $redis->keys('*');
+            //var_dump("todas las keys" , $dataJson);die;
             if ($redis->llen($key) > 0) {
                 $return['data'] = $this->decodeData($dataJson);
                 $return['online'] = true;
@@ -71,10 +73,10 @@ class CacheService {
      * @param string $value with the json string of scores.
      */
     
-    public function set($key, $value) 
+    public function set($key, $key2, $value) 
     {
         if ($this->validateRedisConnection()) {
-            $this->getCache()->rpush($key, $value);
+            $this->getCache()->hset($key, $key2, $value);
         }
     }
 

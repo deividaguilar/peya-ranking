@@ -1,3 +1,14 @@
-app:
-    resource: '@AppBundle/Controller/'
-    type: annotation
+get_score:
+    path:       /score/
+    defaults:   {_controller: AppBundle:Scores:getAllScores}
+    methods:    [GET]
+
+save_score:
+    path:       /score/
+    defaults:   {_controller: AppBundle:Scores:saveScore}
+    methods:    [POST]
+
+delete_all_score:
+    path:       /score/
+    defaults:   {_controller: AppBundle:Scores:deleteAll}
+    methods:    [DELETE]
