@@ -48,22 +48,23 @@ class CacheService {
         if ($this->validateRedisConnection()) {
             $this->validateLogCacheOffLine($key);
             $redis = $this->getCache();
-            $dataJson = $redis->lrange($key, 0, $redis->llen($key));
-            //$dataJson = $redis->keys('*');
-            //var_dump("todas las keys" , $dataJson);die;
-            if ($redis->llen($key) > 0) {
-                $return['data'] = $this->decodeData($dataJson);
-                $return['online'] = true;
-                return (object) $return;
-            } else {
-                $return['data'] = null;
-                $return['online'] = true;
-                return (object) $return;
+            $keysRedis = $redis->keys("{$key}:*");
+            $return['data'] = null;
+            $return['online'] = true;
+            foreach ($keysRedis as $value) {
+                list($prf, $id) = explode(":", $value);
+                $return['data'][$id] = $redis->hgetall($value);
             }
         } else {
             $return['data'] = null;
             $return['online'] = false;
-            return (object) $return;
+        }
+        return (object) $return;
+    }
+
+    public function updateRedis($id, $values){
+        foreach ($values as $key => $value) {
+            $this->set("scores:{$id}", $key, $value);
         }
     }
 
@@ -87,7 +88,7 @@ class CacheService {
     public function del($key) 
     {
         if ($this->validateRedisConnection()) {
-            $this->getCache()->del($key);
+            $this->getCache()->del($this->getCache()->keys("{$key}*"));
         }
     }
 

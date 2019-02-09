@@ -18,32 +18,75 @@ class ScoresController extends Controller {
         if (empty($scores->data)) {
             $scores = $this->findScoresFromMongodb();
             if ($online == true) {
-                var_dump($online, "cargo datos en redis");
                 $this->loadDataOnRedis($scores, $cacheService);
             }
         } else {
-            var_dump("datso redis");
             $scores = $scores->data;
         }
 
-        return new JsonResponse($scores);
+        return new JsonResponse((array) $scores);
     }
 
-    public function getScoreByUserIdAction() {
-        $cacheService = $this->get('cache_service');
-        $key = 'scores';
-        $scores = $cacheService->get($key);
-        $online = $scores->online;
-        if (empty($scores->data)) {
-            $scores = $this->findScoresFromMongodb();
-            if ($online == true) {
-                $this->loadDataOnRedis($scores, $cacheService);
-            }
-        } else {
-            $scores = $scores->data;
+    public function getScoreByDateAction(Request $request) {
+        $field = 'user_id';
+        if ($request->attributes->get('_route') == 'get_score_by_store') {
+            $field = 'store_id';
         }
+        $searchParameters = json_decode($request->getContent());
+        if (empty($searchParameters)) {
+            return new JsonResponse(['status' => 'no search parameters'], 400);
+        }
+        $records = $this->findScoresFromMongodb(
+            [
+                $field => $searchParameters->id, 
+                'date' => [
+                    '$gte' => $searchParameters->date1,
+                    '$lte' => $searchParameters->date2
+                ],
+                'status' => true
+            ]
+        );
+        return new JsonResponse((array) $records);
+    }
 
-        return new JsonResponse($scores);
+    public function getScoreByIdAction(Request $request) {
+        $searchParameters = json_decode($request->getContent());
+        if (empty($searchParameters)) {
+            return new JsonResponse(['status' => 'no search parameters'], 400);
+        }
+        $records = $this->findScoresFromMongodb(
+            ['_id' => $searchParameters->id]
+        );
+        return new JsonResponse((array) $records);
+    }
+
+    public function updateScoreAction(Request $request) {
+        $searchParameters = json_decode($request->getContent());
+        $fields = [
+            'status' => false
+        ];
+        if ($this->getRequest()->isMethod('PUT')) {
+            $fields = [
+                'score' => $searchParameters->score,
+                'date' => $searchParameters->date,
+                'opinions' => $searchParameters->opinions
+            ];
+        }
+        
+        if (empty($searchParameters)) {
+            return new JsonResponse(['status' => 'no search parameters'], 400);
+        }
+        try{
+            $records = $this->updateScoresFromMongodb(
+                $searchParameters->id,
+                $fields
+            );
+        } catch (\Exception $e){
+            return new JsonResponse(['status' => "Error updating"], 400);
+        }
+        $cacheService = $this->get('cache_service');
+        $cacheService->updateRedis($searchParameters->id, $fields);
+        return new JsonResponse(['status' => 'Record updated'], 200);
     }
 
     public function saveScoreAction(Request $request) {
@@ -63,8 +106,9 @@ class ScoresController extends Controller {
         } catch (\Exception $e) {
             return new JsonResponse(['status' => "Score duplicate"], 400);
         }
+        
         $cacheService = $this->get('cache_service');
-        $this->loadDataOnRedis($this->findScoresFromMongodb(), $cacheService);
+        $this->loadDataOnRedis([$score->_id => (array) $score], $cacheService);
         return new JsonResponse(['status' => 'Score successfully created']);
     }
 
@@ -87,7 +131,7 @@ class ScoresController extends Controller {
         if ($cacheService->validateRedisConnection()) {
             foreach ($scores as $score) {
                 foreach($score as $key => $value) {
-                    $cacheService->set($score['user_id'], $key, $value);
+                    $cacheService->set('scores:'.$score['_id'], $key, $value);
                 }
             }
         }
@@ -97,12 +141,21 @@ class ScoresController extends Controller {
      * This method finds the scores on MongoDb
      * @return object list with the scores
      */
-    
-    private function findScoresFromMongodb() 
+    private function findScoresFromMongodb($where = array(), $fields = array()) 
     {
         $database = $this->get('database_service')->getDatabase();
-        $scores = $database->scores->find();
+        $scores = $database->scores->find($where, $fields);
         $scores = iterator_to_array($scores);
         return $scores;
+    }
+
+    /**
+     * This method update the scores on MongoDb
+     * @return object list with the scores
+     */
+    private function updateScoresFromMongodb($id, $set = array()) 
+    {
+        $database = $this->get('database_service')->getDatabase();
+        $database->scores->update(['_id' => $id], ['$set' => $set]);
     }
 }
