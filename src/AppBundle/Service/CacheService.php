@@ -33,7 +33,7 @@ class CacheService {
         );
         $client = new Predis\Client($parameters);
         $this->setCache($client);
-        $this->setDataBase($database->getDatabase());
+        $this->setDataBase($database);
     }
 
     /**
@@ -42,22 +42,20 @@ class CacheService {
      * @return JSON structure list with the scores 
      * @param string $key with key name.
      */
-    public function get($key)
+    public function get($key, $id)
     {
         $return = array();
         if ($this->validateRedisConnection()) {
             $this->validateLogCacheOffLine($key);
             $redis = $this->getCache();
-            $keysRedis = $redis->keys("{$key}:*");
-            $return['data'] = null;
-            $return['online'] = true;
+            $id = (empty($id)) ? '*' : $id['_id'];
+            $keysRedis = $redis->keys("{$key}:{$id}");
             foreach ($keysRedis as $value) {
                 list($prf, $id) = explode(":", $value);
                 $return['data'][$id] = $redis->hgetall($value);
             }
         } else {
-            $return['data'] = null;
-            $return['online'] = false;
+            $return['data'] = $this->getDataBase()->findScoresFromMongodb($id);
         }
         return (object) $return;
     }
@@ -85,10 +83,10 @@ class CacheService {
      * This method deletes all records belong to "scores" key on redis.
      * @param string $key with key name
      */
-    public function del($key) 
+    public function del() 
     {
         if ($this->validateRedisConnection()) {
-            $this->getCache()->del($this->getCache()->keys("{$key}*"));
+            $this->getCache()->flushDb();
         }
     }
 
@@ -192,13 +190,15 @@ class CacheService {
     
     private function validateLogCacheOffLine($key) 
     {
-        $state = $this->getDataBase()->logoffline->count(array(
+        $state = $this->getDataBase()->getMongoDb()->logoffline->count(array(
             'state' => true
         ));
 
         if ($state > 0) {
             $this->updateLogOffLine();
-            $this->del($key);
+            $this->del();
+            $records = $this->getDataBase()->findScoresFromMongodb();
+            $this->loadDataOnRedis($records);
         } 
     }
 
@@ -212,7 +212,7 @@ class CacheService {
             'date_time' => date('Y-m-d H:i:s'),
             'state' => true
         );
-        $this->getDataBase()->logoffline->insert($logOffline);
+        $this->getDataBase()->getMongoDb()->logoffline->insert($logOffline);
     }
 
     /**
@@ -221,7 +221,7 @@ class CacheService {
      */
     private function updateLogOffLine() 
     {
-        $this->getDataBase()->logoffline->update(
+        $this->getDataBase()->getMongoDB()->logoffline->update(
             array(
                 'state' => true
             ), 
@@ -235,5 +235,18 @@ class CacheService {
                 'multiple' => true
             )
         );
+    }
+
+    /**
+     * This method goes through the score array and load each one on a redis
+     * List
+     */
+    public function loadDataOnRedis($scores) 
+    {
+        foreach ($scores as $score) {
+            foreach($score as $key => $value) {
+                $this->set('scores:'.$score['_id'], $key, $value);
+            }
+        }
     }
 }

@@ -4,7 +4,7 @@ namespace AppBundle\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-class CustomersControllerTest extends WebTestCase
+class ScoresControllerTest extends WebTestCase
 {
     protected $client;
 

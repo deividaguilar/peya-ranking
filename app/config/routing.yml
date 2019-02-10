@@ -1,6 +1,6 @@
 get_all_score:
     path:       /score/
-    defaults:   {_controller: AppBundle:Scores:getAllScores}
+    defaults:   {_controller: AppBundle:Scores:getScores}
     methods:    [GET]
 
 save_score:
@@ -15,7 +15,7 @@ get_score_by_user:
 
 get_score_by_id:
     path:       /scorebyid/
-    defaults:   {_controller: AppBundle:Scores:getScoreById}
+    defaults:   {_controller: AppBundle:Scores:getScores}
     methods:    [POST]
 
 get_score_by_store:
