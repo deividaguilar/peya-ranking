@@ -23,13 +23,13 @@ class CacheService {
      */
     private $database;
 
-    public function __construct($host, $port, $prefix, $database) 
+    public function __construct($host, $port, $prefix, $cacheDb, $database) 
     {
         $parameters = array(
             'scheme' => 'redis',
             'host' => $host,
             'port' => $port,
-            'database' => 1
+            'database' => $cacheDb
         );
         $client = new Predis\Client($parameters);
         $this->setCache($client);
@@ -60,9 +60,9 @@ class CacheService {
         return (object) $return;
     }
 
-    public function updateRedis($id, $values){
+    public function updateRedis($keyName, $id, $values){
         foreach ($values as $key => $value) {
-            $this->set("scores:{$id}", $key, $value);
+            $this->set("{$keyName}:{$id}", $key, $value);
         }
     }
 
@@ -198,7 +198,7 @@ class CacheService {
             $this->updateLogOffLine();
             $this->del();
             $records = $this->getDataBase()->findScoresFromMongodb();
-            $this->loadDataOnRedis($records);
+            $this->loadDataOnRedis($key, $records);
         } 
     }
 
@@ -241,11 +241,11 @@ class CacheService {
      * This method goes through the score array and load each one on a redis
      * List
      */
-    public function loadDataOnRedis($scores) 
+    public function loadDataOnRedis($keyName, $scores) 
     {
         foreach ($scores as $score) {
             foreach($score as $key => $value) {
-                $this->set('scores:'.$score['_id'], $key, $value);
+                $this->set("{$keyName}:{$score['_id']}", $key, $value);
             }
         }
     }

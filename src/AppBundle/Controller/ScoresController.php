@@ -14,6 +14,15 @@ class ScoresController extends Controller {
         $id = array();
         if ($this->getRequest()->isMethod('POST')) {
             $searchParameters = json_decode($request->getContent());
+            $validator = $this->get('validator_service');
+            $resul = $validator->executeValidation(
+                (array) $searchParameters,
+                $request->attributes->get('_route')
+            );
+
+            if (!$resul) {
+                return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
+            }
             $id = ['_id' => $searchParameters->id];
         }
         $cacheService = $this->get('cache_service');
@@ -28,8 +37,14 @@ class ScoresController extends Controller {
             $field = 'store_id';
         }
         $searchParameters = json_decode($request->getContent());
-        if (empty($searchParameters)) {
-            return new JsonResponse(['status' => 'no search parameters'], 400);
+        $validator = $this->get('validator_service');
+        $resul = $validator->executeValidation(
+            (array) $searchParameters,
+            $request->attributes->get('_route')
+        );
+
+        if (!$resul) {
+            return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
         }
         $records = $this->get('database_service')->findScoresFromMongodb(
             [
@@ -46,6 +61,20 @@ class ScoresController extends Controller {
 
     public function updateScoreAction(Request $request) {
         $searchParameters = json_decode($request->getContent());
+        $validator = $this->get('validator_service');
+        $resul = $validator->executeValidation(
+            (array) $searchParameters,
+            $request->attributes->get('_route')
+        );
+
+        if (!$resul) {
+            return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
+        }
+
+        if (!is_numeric($searchParameters->score) || ($searchParameters->score < 1 || $searchParameters->score > 5)){
+            return new JsonResponse(['status' => 'Value of score invalid.'], 400);
+        }
+
         $fields = [
             'status' => false
         ];
@@ -56,10 +85,7 @@ class ScoresController extends Controller {
                 'opinions' => $searchParameters->opinions
             ];
         }
-        
-        if (empty($searchParameters)) {
-            return new JsonResponse(['status' => 'no search parameters'], 400);
-        }
+
         try{
             $records = $this->get('database_service')->updateScoresFromMongodb(
                 $searchParameters->id,
@@ -69,14 +95,20 @@ class ScoresController extends Controller {
             return new JsonResponse(['status' => "Error updating"], 400);
         }
         $cacheService = $this->get('cache_service');
-        $cacheService->updateRedis($searchParameters->id, $fields);
+        $cacheService->updateRedis("scores", $searchParameters->id, $fields);
         return new JsonResponse(['status' => 'Record updated'], 200);
     }
 
     public function saveScoreAction(Request $request) {
-        $score = json_decode($request->getContent());
-        if (empty($score)) {
-            return new JsonResponse(['status' => 'there is no score'], 400);
+        $score = json_decode($request->getContent()); 
+        $validator = $this->get('validator_service');
+        $resul = $validator->executeValidation(
+            (array) $score,
+            $request->attributes->get('_route')
+        );
+
+        if (!$resul) {
+            return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
         }
         
         if (is_array($score)){
@@ -97,13 +129,13 @@ class ScoresController extends Controller {
         }
         
         $cacheService = $this->get('cache_service');
-        $cacheService->loadDataOnRedis([$score->_id => (array) $score]);
+        $cacheService->loadDataOnRedis("scores",[$score->_id => (array) $score]);
         return new JsonResponse(['status' => 'Score successfully created']);
     }
 
     public function deleteAllAction() 
     {
-        $database = $this->get('database_service')->getDatabase();
+        $database = $this->get('database_service')->getMongoDb();
         $database->scores->drop();
         $cacheService = $this->get('cache_service');
         $cacheService->del();

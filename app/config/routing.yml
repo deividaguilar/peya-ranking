@@ -1,4 +1,4 @@
-get_all_score:
+get_score:
     path:       /score/
     defaults:   {_controller: AppBundle:Scores:getScores}
     methods:    [GET]
