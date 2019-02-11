@@ -6,7 +6,9 @@ parameters:
 services:
     database_service:
         class:        AppBundle\Service\DatabaseService
-        arguments:    [%database_host%, %database_port%, %database_name%]
+        arguments:    ["%database_host%", "%database_port%", "%database_name%"]
     cache_service:
         class:        AppBundle\Service\CacheService
-        arguments:    [%cache_host%, %cache_port%, %cache_prefix%, @database_service]      
+        arguments:    ["%cache_host%", "%cache_port%", "%cache_prefix%", "%cache_db%", '@database_service']
+    validator_service:
+        class:        AppBundle\Service\ValidatorService

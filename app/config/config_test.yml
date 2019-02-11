@@ -8,9 +8,7 @@ framework:
     profiler:
         collect: false
 
-web_profiler:
-    toolbar: false
-    intercept_redirects: false
-
-swiftmailer:
-    disable_delivery: true
+parameters:
+    database_name: peya-symfony-cache-test
+    cache_prefix: test
+    cache_db: 2

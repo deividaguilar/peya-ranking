@@ -1,3 +1,39 @@
-app:
-    resource: '@AppBundle/Controller/'
-    type: annotation
+get_score:
+    path:       /score/
+    defaults:   {_controller: AppBundle:Scores:getScores}
+    methods:    [GET]
+
+save_score:
+    path:       /score/
+    defaults:   {_controller: AppBundle:Scores:saveScore}
+    methods:    [POST]
+
+get_score_by_user:
+    path:       /scorebyuser/
+    defaults:   {_controller: AppBundle:Scores:getScoreByDate}
+    methods:    [POST]
+
+get_score_by_id:
+    path:       /scorebyid/
+    defaults:   {_controller: AppBundle:Scores:getScores}
+    methods:    [POST]
+
+get_score_by_store:
+    path:       /scorebystore/
+    defaults:   {_controller: AppBundle:Scores:getScoreByDate}
+    methods:    [POST]
+
+update_score:
+    path:       /updatescore/
+    defaults:   {_controller: AppBundle:Scores:updateScore}
+    methods:    [PUT]
+
+delete_score:
+    path:       /updatescore/
+    defaults:   {_controller: AppBundle:Scores:updateScore}
+    methods:    [DELETE]
+
+delete_all_score:
+    path:       /score/
+    defaults:   {_controller: AppBundle:Scores:deleteAll}
+    methods:    [DELETE]

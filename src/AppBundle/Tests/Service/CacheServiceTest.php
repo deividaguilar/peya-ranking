@@ -18,70 +18,94 @@ use AppBundle\Service\CacheService as cache;
 class CacheServiceTest extends \PHPUnit_Framework_TestCase {
 
     private $cacheService;
-    static $key = "customerTest";
+    static $key = "scoreTest";
 
     public function setUp() {
-        $this->setCacheService(new cache('127.0.0.1', '6379', null));
+        $this->setCacheService(new cache('127.0.0.1', '6379', null, 2, null));
+        $this->getCacheService()->del();
     }
 
     public function testSet() {
-        $muck = array
-            (
-            '59f93e22daddaac42600015a' => array
-                (
-                '_id' => array
-                    (
-                    '$id' => '59f93e22daddaac42600015a'
-                ),
-                'name' => 'leandro',
-                'age' => 26
-            ),
-            '59f93e22daddaac42600015b' => array
-                (
-                '_id' => array
-                    (
-                    '$id' => '59f93e22daddaac42600015b'
-                ),
-                'name' => 'marcio',
-                'age' => 30
-            ),
-            '59f93e22daddaac42600015c' => array
-                (
-                '_id' => array
-                    (
-                    '$id' => '59f93e22daddaac42600015c'
-                ),
-                'name' => 'deivid',
-                'age' => 36
-            )
-        );
-        
-        foreach ($muck as $record) {
-            $this->getCacheService()->set(self::$key, json_encode($record));
-        }
-        
-        $this->assertEquals(3, $this->getCacheService()->getCache()->llen(self::$key));
+        $this->insertData();
+        $this->assertEquals(3, count($this->getCacheService()->getCache()->keys(self::$key."*")));
     }
     
     public function testGet()
     {
-        $data = $this->getCacheService()->get(self::$key);
-        $record = $data->{'59f93e22daddaac42600015b'};
-        $this->assertEquals('marcio', $record->name);
+        $this->insertData();
+        $data = $this->getCacheService()->getCache()->hgetall(self::$key.":80054382261");
+        $this->assertEquals("today is the day", $data['opinions']);
+    }
+    
+    public function testUpdate()
+    {
+        $this->insertData();
+        $data = $this->getCacheService()->updateRedis(self::$key, "80054382261", ["status" => false]);
+        $data = $this->getCacheService()->getCache()->hgetall(self::$key.":80054382261");
+        $this->assertEmpty($data['status']);
     }
     
     public function testDel()
     {
-        $this->getCacheService()->del(self::$key);
-        $data = $this->getCacheService()->get(self::$key);
-        $this->assertNull($data);
+        $this->insertData();
+        $this->getCacheService()->del();
+        $this->assertEquals(0, count($this->getCacheService()->getCache()->keys(self::$key."*")));
     }
-    
-    private function setCacheService($cache) {
+
+    private function setCacheService($cache)
+    {
         $this->cacheService = $cache;
     }
 
-    private function getCacheService() {
+    private function getCacheService()
+    {
         return $this->cacheService;
+    }
+
+    private function insertData()
+    {
+        $mock = [
+            "80054382261" => [
+              "_id" => "80054382261",
+              "user_id" => "80054382",
+              "store_id" => "26",
+              "buy_id" => "1",
+              "score" => "4",
+              "date" => "2020-01-01",
+              "opinions" => "today is the day",
+              "status" => "1"
+            ],
+            "80054382263" => [
+              "_id" => "80054382263",
+              "user_id" => "80054382",
+              "store_id" => "26",
+              "buy_id" => "3",
+              "score" => "4",
+              "date" => "2020-01-01",
+              "opinions" => "today is the day",
+              "status" => "1"
+            ],
+            "80054382262" => [
+              "_id" => "80054382262",
+              "user_id" => "80054382",
+              "store_id" => "26",
+              "buy_id" => "2",
+              "score" => "4",
+              "date" => "2020-01-01",
+              "opinions" => "today is the day",
+              "status" => "1"
+            ]
+        ];
+        
+        foreach ($mock as $record) {
+            foreach($record as $field => $value){
+                $this->getCacheService()->set(self::$key.":".$record['_id'], $field, $value);
+            }
+        }
+    }
+
+    protected function tearDown()
+    {
+        $this->getCacheService()->del();
     }
 }
