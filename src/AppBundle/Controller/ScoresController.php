@@ -15,12 +15,12 @@ class ScoresController extends Controller {
         if ($this->getRequest()->isMethod('POST')) {
             $searchParameters = json_decode($request->getContent());
             $validator = $this->get('validator_service');
-            $resul = $validator->executeValidation(
+            $result = $validator->executeValidation(
                 (array) $searchParameters,
                 $request->attributes->get('_route')
             );
 
-            if (!$resul) {
+            if (!$result) {
                 return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
             }
             $id = ['_id' => $searchParameters->id];
@@ -38,12 +38,12 @@ class ScoresController extends Controller {
         }
         $searchParameters = json_decode($request->getContent());
         $validator = $this->get('validator_service');
-        $resul = $validator->executeValidation(
+        $result = $validator->executeValidation(
             (array) $searchParameters,
             $request->attributes->get('_route')
         );
 
-        if (!$resul) {
+        if (!$result) {
             return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
         }
         $records = $this->get('database_service')->findScoresFromMongodb(
@@ -62,12 +62,12 @@ class ScoresController extends Controller {
     public function updateScoreAction(Request $request) {
         $searchParameters = json_decode($request->getContent());
         $validator = $this->get('validator_service');
-        $resul = $validator->executeValidation(
+        $result = $validator->executeValidation(
             (array) $searchParameters,
             $request->attributes->get('_route')
         );
 
-        if (!$resul) {
+        if (!$result) {
             return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
         }
 
@@ -102,12 +102,12 @@ class ScoresController extends Controller {
     public function saveScoreAction(Request $request) {
         $score = json_decode($request->getContent()); 
         $validator = $this->get('validator_service');
-        $resul = $validator->executeValidation(
+        $result = $validator->executeValidation(
             (array) $score,
             $request->attributes->get('_route')
         );
 
-        if (!$resul) {
+        if (!$result) {
             return new JsonResponse(['status' => 'the parameters are incorrect'], 400);
         }
         
