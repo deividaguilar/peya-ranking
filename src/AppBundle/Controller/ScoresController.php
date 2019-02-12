@@ -15,12 +15,12 @@ class ScoresController extends Controller {
         if ($this->getRequest()->isMethod('POST')) {
             $searchParameters = json_decode($request->getContent());
             $validator = $this->get('validator_service');
-            $resul = $validator->executeValidation(
+            $result = $validator->executeValidation(
                 (array) $searchParameters,
                 $request->attributes->get('_route')
             );
 
-            if (!$resul) {
+            if (!$result) {
                 return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
             }
             $id = ['_id' => $searchParameters->id];
@@ -38,12 +38,12 @@ class ScoresController extends Controller {
         }
         $searchParameters = json_decode($request->getContent());
         $validator = $this->get('validator_service');
-        $resul = $validator->executeValidation(
+        $result = $validator->executeValidation(
             (array) $searchParameters,
             $request->attributes->get('_route')
         );
 
-        if (!$resul) {
+        if (!$result) {
             return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
         }
         $records = $this->get('database_service')->findScoresFromMongodb(
@@ -62,23 +62,23 @@ class ScoresController extends Controller {
     public function updateScoreAction(Request $request) {
         $searchParameters = json_decode($request->getContent());
         $validator = $this->get('validator_service');
-        $resul = $validator->executeValidation(
+        $result = $validator->executeValidation(
             (array) $searchParameters,
             $request->attributes->get('_route')
         );
 
-        if (!$resul) {
+        if (!$result) {
             return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
-        }
-
-        if (!is_numeric($searchParameters->score) || ($searchParameters->score < 1 || $searchParameters->score > 5)){
-            return new JsonResponse(['status' => 'Value of score invalid.'], 400);
         }
 
         $fields = [
             'status' => false
         ];
         if ($this->getRequest()->isMethod('PUT')) {
+            if (!is_numeric($searchParameters->score) || ($searchParameters->score < 1 || $searchParameters->score > 5)){
+                return new JsonResponse(['status' => 'Value of score invalid.'], 402);
+            }
+
             $fields = [
                 'score' => $searchParameters->score,
                 'date' => $searchParameters->date,
@@ -92,7 +92,7 @@ class ScoresController extends Controller {
                 $fields
             );
         } catch (\Exception $e){
-            return new JsonResponse(['status' => "Error updating"], 400);
+            return new JsonResponse(['status' => "Error updating"], 404);
         }
         $cacheService = $this->get('cache_service');
         $cacheService->updateRedis("scores", $searchParameters->id, $fields);
@@ -102,21 +102,21 @@ class ScoresController extends Controller {
     public function saveScoreAction(Request $request) {
         $score = json_decode($request->getContent()); 
         $validator = $this->get('validator_service');
-        $resul = $validator->executeValidation(
+        $result = $validator->executeValidation(
             (array) $score,
             $request->attributes->get('_route')
         );
 
-        if (!$resul) {
-            return new JsonResponse(['status' => 'the parameters are incorrect '], 400);
+        if (!$result) {
+            return new JsonResponse(['status' => 'the parameters are incorrect'], 400);
         }
         
         if (is_array($score)){
-            return new JsonResponse(['status' => 'there is more one qualification'], 400);
+            return new JsonResponse(['status' => 'there is more one qualification'], 401);
         }
 
         if (!is_numeric($score->score) || ($score->score < 1 || $score->score > 5)){
-            return new JsonResponse(['status' => 'Value of score invalid.'], 400);
+            return new JsonResponse(['status' => 'Value of score invalid.'], 402);
         }
 
         $database = $this->get('database_service')->getMongoDb();
@@ -125,7 +125,7 @@ class ScoresController extends Controller {
         try {
             $database->scores->insert($score);
         } catch (\Exception $e) {
-            return new JsonResponse(['status' => "Score duplicate"], 400);
+            return new JsonResponse(['status' => "Score duplicate"], 403);
         }
         
         $cacheService = $this->get('cache_service');

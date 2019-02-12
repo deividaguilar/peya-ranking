@@ -1,4 +1,9 @@
 peya-ranking
 ============
 
-A Symfony project created on February 7, 2019, 8:44 pm.
+This project is an API to manage buy scores.
+
+Documentation:
+
+https://app.swaggerhub.com/apis/deividaguilar/peya-ranking/1.0.0
+

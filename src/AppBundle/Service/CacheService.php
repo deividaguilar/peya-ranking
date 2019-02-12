@@ -50,6 +50,7 @@ class CacheService {
             $redis = $this->getCache();
             $id = (empty($id)) ? '*' : $id['_id'];
             $keysRedis = $redis->keys("{$key}:{$id}");
+            $return['data'] = []; 
             foreach ($keysRedis as $value) {
                 list($prf, $id) = explode(":", $value);
                 $return['data'][$id] = $redis->hgetall($value);
